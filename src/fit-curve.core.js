@@ -103,7 +103,7 @@ class bezier {
 
     //Evaluates cubic bezier second derivative at t, return point
     static qprimeprime(ctrlPoly, t) {
-        return maths.addArrays(maths.mulItems( maths.addArrays(maths.subtract(ctrlPoly[2], maths.mulItems(ctrlPoly[1], 2)), ctrlPoly[0]),  6 * (1.0 - t) ), 
+        return maths.addArrays(maths.mulItems( maths.addArrays(maths.subtract(ctrlPoly[2], maths.mulItems(ctrlPoly[1], 2)), ctrlPoly[0]),  6 * (1.0 - t) ),
                                maths.mulItems( maths.addArrays(maths.subtract(ctrlPoly[3], maths.mulItems(ctrlPoly[2], 2)), ctrlPoly[1]),  6 *        t  ));
     }
 }
@@ -120,7 +120,7 @@ function fitCurve(points, maxError, progressCallback) {
     var len = points.length,
         leftTangent =  createTangent(points[1], points[0]),
         rightTangent = createTangent(points[len - 2], points[len - 1]);
-    
+
     return fitCubic(points, leftTangent, rightTangent, maxError, progressCallback);
 }
 
@@ -136,7 +136,7 @@ function fitCurve(points, maxError, progressCallback) {
  */
 function fitCubic(points, leftTangent, rightTangent, error, progressCallback) {
     const MaxIterations = 20;   //Max times to try iterating (to find an acceptable curve)
-    
+
     var bezCurve,               //Control points of fitted Bezier curve
         u,                      //Parameter values for point
         uPrime,                 //Improved parameter values
@@ -145,25 +145,25 @@ function fitCubic(points, leftTangent, rightTangent, error, progressCallback) {
         centerVector, toCenterTangent, fromCenterTangent,  //Unit tangent vector(s) at splitPoint
         beziers,                //Array of fitted Bezier curves if we need more than one curve
         dist, i;
-    
+
     //console.log('fitCubic, ', points.length);
-    
+
     //Use heuristic if region only has two points in it
     if (points.length === 2) {
         dist = maths.vectorLen(maths.subtract(points[0], points[1])) / 3.0;
         bezCurve = [
-            points[0], 
-            maths.addArrays(points[0], maths.mulItems(leftTangent,  dist)), 
-            maths.addArrays(points[1], maths.mulItems(rightTangent, dist)), 
+            points[0],
+            maths.addArrays(points[0], maths.mulItems(leftTangent,  dist)),
+            maths.addArrays(points[1], maths.mulItems(rightTangent, dist)),
             points[1]
         ];
         return [bezCurve];
     }
-    
+
     //Parameterize points, and attempt to fit curve
     u = chordLengthParameterize(points);
     [bezCurve, maxError, splitPoint] = generateAndReport(points, u, u, leftTangent, rightTangent, progressCallback)
-    
+
     if (maxError < error) {
         return [bezCurve];
     }
@@ -173,7 +173,7 @@ function fitCubic(points, leftTangent, rightTangent, error, progressCallback) {
         uPrime = u;
         prevErr = maxError;
         prevSplit = splitPoint;
-        
+
         for (i = 0; i < MaxIterations; i++) {
 
             uPrime = reparameterize(bezCurve, points, uPrime);
@@ -195,10 +195,10 @@ function fitCubic(points, leftTangent, rightTangent, error, progressCallback) {
             prevSplit = splitPoint;
         }
     }
-    
+
     //Fitting failed -- split at max error point and fit recursively
     beziers = [];
-    
+
     //To create a smooth transition from one curve segment to the next,
     //we calculate the tangent of the points directly before and after the center,
     //and use that same tangent both to and from the center point.
@@ -219,18 +219,19 @@ function fitCubic(points, leftTangent, rightTangent, error, progressCallback) {
     fromCenterTangent = maths.mulItems(toCenterTangent, -1);
 
     /*
-    Note: An alternative to this "divide and conquer" recursion could be to always 
-          let new curve segments start by trying to go all the way to the end, 
+    Note: An alternative to this "divide and conquer" recursion could be to always
+          let new curve segments start by trying to go all the way to the end,
           instead of only to the end of the current subdivided polyline.
           That might let many segments fit a few points more, reducing the number of total segments.
 
           However, a few tests have shown that the segment reduction is insignificant
-          (240 pts, 100 err: 25 curves vs 27 curves. 140 pts, 100 err: 17 curves on both), 
+          (240 pts, 100 err: 25 curves vs 27 curves. 140 pts, 100 err: 17 curves on both),
           and the results take twice as many steps and milliseconds to finish,
           without looking any better than what we already have.
     */
     beziers = beziers.concat(fitCubic(points.slice(0, splitPoint + 1), leftTangent, toCenterTangent,    error, progressCallback));
     beziers = beziers.concat(fitCubic(points.slice(splitPoint),        fromCenterTangent, rightTangent, error, progressCallback));
+    console.log(JSON.stringify(beziers))
     return beziers;
 };
 
@@ -247,10 +248,10 @@ function generateAndReport(points, paramsOrig, paramsPrime, leftTangent, rightTa
 
     if(progressCallback) {
         progressCallback({
-            bez: bezCurve, 
+            bez: bezCurve,
             points: points,
-            params: paramsOrig, 
-            maxErr: maxError, 
+            params: paramsOrig,
+            maxErr: maxError,
             maxPoint: splitPoint,
         });
     }
@@ -273,53 +274,53 @@ function generateBezier(points, parameters, leftTangent, rightTangent) {
         C, X,                           //Matrices C & X
         det_C0_C1, det_C0_X, det_X_C1,  //Determinants of matrices
         alpha_l, alpha_r,               //Alpha values, left and right
-        
-        epsilon, segLength, 
+
+        epsilon, segLength,
         i, len, tmp, u, ux,
         firstPoint = points[0],
         lastPoint = points[points.length-1];
 
     bezCurve = [firstPoint, null, null, lastPoint];
     //console.log('gb', parameters.length);
-    
+
     //Compute the A's
     A = maths.zeros_Xx2x2(parameters.length);
     for (i = 0, len = parameters.length; i < len; i++) {
         u = parameters[i];
         ux = 1 - u;
         a = A[i];
-        
+
         a[0] = maths.mulItems(leftTangent,  3 * u  * (ux*ux));
         a[1] = maths.mulItems(rightTangent, 3 * ux * (u*u));
     }
-    
+
     //Create the C and X matrices
     C = [[0,0], [0,0]];
     X = [0,0];
     for (i = 0, len = points.length; i < len; i++) {
         u = parameters[i];
         a = A[i];
-    
+
         C[0][0] += maths.dot(a[0], a[0]);
         C[0][1] += maths.dot(a[0], a[1]);
         C[1][0] += maths.dot(a[0], a[1]);
         C[1][1] += maths.dot(a[1], a[1]);
-        
+
         tmp = maths.subtract(points[i], bezier.q([firstPoint, firstPoint, lastPoint, lastPoint], u));
-        
+
         X[0] += maths.dot(a[0], tmp);
         X[1] += maths.dot(a[1], tmp);
     }
-    
+
     //Compute the determinants of C and X
     det_C0_C1 = (C[0][0] * C[1][1]) - (C[1][0] * C[0][1]);
     det_C0_X  = (C[0][0] * X[1]   ) - (C[1][0] * X[0]   );
     det_X_C1  = (X[0]    * C[1][1]) - (X[1]    * C[0][1]);
-    
+
     //Finally, derive alpha values
     alpha_l = det_C0_C1 === 0 ? 0 : det_X_C1 / det_C0_C1;
     alpha_r = det_C0_C1 === 0 ? 0 : det_C0_X / det_C0_C1;
-    
+
     //If alpha negative, use the Wu/Barsky heuristic (see text).
     //If alpha is 0, you get coincident control points that lead to
     //divide by zero in any subsequent NewtonRaphsonRootFind() call.
@@ -337,7 +338,7 @@ function generateBezier(points, parameters, leftTangent, rightTangent) {
         bezCurve[1] = maths.addArrays(firstPoint, maths.mulItems(leftTangent,  alpha_l));
         bezCurve[2] = maths.addArrays(lastPoint,  maths.mulItems(rightTangent, alpha_r));
     }
-    
+
     return bezCurve;
 };
 
@@ -355,7 +356,7 @@ function reparameterize(bezier, points, parameters) {
     results = [];
     for (j = 0, len = points.length; j < len; j++) {
         point = points[j], u = parameters[j];
-        
+
         results.push(newtonRaphsonRootFind(bezier, point, u));
     }
     return results;
@@ -385,7 +386,7 @@ function newtonRaphsonRootFind(bez, point, u) {
         gives
         u_n+1 = u_n - |q(u_n)-p * q'(u_n)| / |q'(u_n)**2 + q(u_n)-p * q''(u_n)|
     */
-    
+
     var d = maths.subtract(bezier.q(bez, u), point),
         qprime = bezier.qprime(bez, u),
         numerator = /*sum(*/maths.mulMatrix(d, qprime)/*)*/,
@@ -411,12 +412,12 @@ function chordLengthParameterize(points) {
         currU = i ? prevU + maths.vectorLen(maths.subtract(p, prevP))
                   : 0;
         u.push(currU);
-        
+
         prevU = currU;
         prevP = p;
     })
     u = u.map(x => x/prevU);
-    
+
     return u;
 };
 
@@ -434,7 +435,7 @@ function computeMaxError(points, bez, parameters) {
         splitPoint, //Point of maximum error
         v,          //Vector from point to curve
         i, count, point, t;
-    
+
     maxDist = 0;
     splitPoint = points.length / 2;
 
@@ -445,13 +446,13 @@ function computeMaxError(points, bez, parameters) {
 
         v = maths.subtract(bezier.q(bez, t), point);
         dist = v[0]*v[0] + v[1]*v[1];
-        
+
         if (dist > maxDist) {
             maxDist = dist;
             splitPoint = i;
         }
     }
-    
+
     return [maxDist, splitPoint];
 };
 
@@ -460,10 +461,10 @@ function find_t(bez, param) {
     if(param >= 1) { return 1; }
 
     /*
-        'param' is a value between 0 and 1 telling us the relative position 
+        'param' is a value between 0 and 1 telling us the relative position
         of a point on the source polyline (linearly from the start (0) to the end (1)).
         To see if a given curve - 'bez' - is a close approximation of the polyline,
-        we compare such a poly-point to the point on the curve that's the same 
+        we compare such a poly-point to the point on the curve that's the same
         relative distance along the curve's length.
 
         But finding that curve-point takes a little work:

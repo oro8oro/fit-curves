@@ -11,7 +11,7 @@ var bezierControlPoints = [];
 var bezierControlPointLines = [];
 
 window.onload = function () {
-    paper = Raphael('container', 800, 400);
+    paper = SVG('container').size(800, 400);
 
     function lineDataToPathString(lineData) {
         var str = "";
@@ -28,6 +28,19 @@ window.onload = function () {
 
     function fittedCurveDataToPathString(fittedLineData) {
         var str = "";
+        console.log(JSON.stringify(fittedLineData))
+        for (i in fittedLineData) {
+          if (i==0){
+            str += "M " + fittedLineData[i][0][0] + " " + fittedLineData[i][0][1];
+          }
+
+          if (typeof fittedLineData[i] == "object"){
+            str += "C " + fittedLineData[i][1][0] + " " + fittedLineData[i][1][1] + ", " +
+                fittedLineData[i][2][0] + " " + fittedLineData[i][2][1] + " "+
+                fittedLineData[i][3][0] + " " + fittedLineData[i][3][1] + " ";
+          }
+        }
+        /*
         fittedLineData.map(function (bezier, i) {
             if (i == 0) {
                 str += "M " + bezier[0][0] + " " + bezier[0][1];
@@ -36,7 +49,8 @@ window.onload = function () {
                 bezier[2][0] + " " + bezier[2][1] + ", " +
                 bezier[3][0] + " " + bezier[3][1] + " ";
         });
-
+        */
+        console.log(str)
         return str;
     }
 
@@ -57,25 +71,29 @@ window.onload = function () {
             if (rawLines.length <= i) {
                 var path = paper.path('');
                 path.attr({
-                    stroke: 'lightgray'
+                    stroke: 'lightgray',
+                "fill-opacity": 0
                 });
                 rawLines.push(path);
             }
-            rawLines[i].attr("path", lineDataToPathString(lineData));
+            rawLines[i].attr("d", lineDataToPathString(lineData));
 
             var isLastItem = i === rawLinesData.length - 1;
             if (updateAllCurves || isLastItem) {
                 if (fittedCurves.length <= i) {
                     path = paper.path('');
                     path.attr({
-                        stroke: 'red'
-                    });
+                        stroke: 'red',
+                    "fill-opacity": 0});
                     fittedCurves.push(path);
                 }
                 if (lineData.length > 1) {
                     fittedCurvesData[i] = fitCurve(lineData, error);
                     //console.log(lineData.length, lineData.map(function(arr){return "["+arr.join(",")+"]";}).join(","));
-                    fittedCurves[i].attr("path", fittedCurveDataToPathString(fittedCurvesData[i]));
+
+                    console.log(JSON.stringify(fittedCurvesData[i]))
+
+                    fittedCurves[i].attr("d", fittedCurveDataToPathString(fittedCurvesData[i]));
                 }
             }
         });
@@ -89,7 +107,7 @@ window.onload = function () {
                 var cp2 = bezier[2];
                 var p2 = bezier[3];
                 var getDotCircle = function (p) {
-                    var circle = paper.circle(p[0], p[1], 5);
+                    var circle = paper.circle(5).cx(p[0]).cy(p[1]);
                     circle.attr({
                         fill: 'rgb(200, 50, 0)',
                         'fill-opacity': 0.5,
@@ -99,7 +117,7 @@ window.onload = function () {
                 };
 
                 var getControlPoint = function (p) {
-                    var circle = paper.circle(p[0], p[1], 2);
+                    var circle = paper.circle(2).cx(p[0]).cy(p[1]);
                     circle.attr({
                         fill: 'rgb(100, 200, 0)',
                         'fill-opacity': 0.5,
@@ -190,5 +208,3 @@ window.onload = function () {
         updateLines();
     });
 };
-
-
